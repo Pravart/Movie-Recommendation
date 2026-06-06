@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Recommendation System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .dropdown-item.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <h1 class="text-center mb-4">🎬 Movie Recommendation System</h1>
+
+    <!-- Search form with dropdown autocomplete -->
+    <form id="form" class="d-flex justify-content-center mb-4">
+        <div class="dropdown w-50">
+            <input type="text" id="movie" class="form-control" placeholder="Enter a movie title"
+                   onkeyup="searchTitles(event)" data-bs-toggle="dropdown" aria-expanded="false">
+            <ul id="suggestions" class="dropdown-menu w-100"></ul>
+        </div>
+        <button type="submit" class="btn btn-primary ms-2">Get Recommendations</button>
+    </form>
+
+    <!-- Results -->
+    <div id="results" class="mt-4"></div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let selectedIndex = -1; // track which suggestion is highlighted
+
+async function searchTitles(e) {
+    const query = document.getElementById("movie").value;
+    const suggestions = document.getElementById("suggestions");
+
+    // Handle arrow keys and Enter
+    if (e.key === "ArrowDown") {
+        if (suggestions.children.length > 0) {
+            selectedIndex = (selectedIndex + 1) % suggestions.children.length;
+            updateHighlight(suggestions);
+        }
+        return;
+    }
+    if (e.key === "ArrowUp") {
+        if (suggestions.children.length > 0) {
+            selectedIndex = (selectedIndex - 1 + suggestions.children.length) % suggestions.children.length;
+            updateHighlight(suggestions);
+        }
+        return;
+    }
+    if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedIndex >= 0) {
+            // Select highlighted suggestion
+            document.getElementById("movie").value = suggestions.children[selectedIndex].textContent;
+            suggestions.innerHTML = "";
+            selectedIndex = -1;
+        }
+        // Trigger recommendations immediately
+        getRecommendations();
+        return;
+    }
+
+    // Reset highlight if typing new letters
+    selectedIndex = -1;
+
+    if (query.length < 2) {
+        suggestions.innerHTML = "";
+        return;
+    }
+
+    const response = await fetch(`/search/?q=${query}`);
+    const data = await response.json();
+    suggestions.innerHTML = "";
+
+    if (data.matches) {
+        data.matches.forEach((title, idx) => {
+            const item = document.createElement("li");
+            item.className = "dropdown-item";
+            item.textContent = title;
+            item.onclick = () => {
+                document.getElementById("movie").value = title;
+                suggestions.innerHTML = "";
+                selectedIndex = -1;
+                getRecommendations(); // trigger recommendations on click
+            };
+            suggestions.appendChild(item);
+        });
+
+        // Automatically highlight the first suggestion
+        if (suggestions.children.length > 0) {
+            selectedIndex = 0;
+            updateHighlight(suggestions);
+        }
+    }
+}
+
+function updateHighlight(suggestions) {
+    Array.from(suggestions.children).forEach((child, idx) => {
+        child.classList.toggle("active", idx === selectedIndex);
+    });
+}
+
+async function getRecommendations() {
+    const movie = document.getElementById("movie").value;
+    const response = await fetch(`/recommend/?movie=${movie}`);
+    const data = await response.json();
+
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    if (data.error) {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+    } else {
+        let list = "<ul class='list-group'>";
+        data.recommendations.forEach(r => {
+            list += `<li class='list-group-item'>${r}</li>`;
+        });
+        list += "</ul>";
+        resultsDiv.innerHTML = list;
+    }
+}
+
+document.getElementById("form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    getRecommendations();
+});
+</script>
+</body>
+</html>
