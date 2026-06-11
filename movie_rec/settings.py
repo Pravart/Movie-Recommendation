@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-js$wt16izc3-*wgrg9+_y!$&2_9&!1xno%#wjwr(@4+2*g+d88
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['movie-recommendation-3znmn.onrender.com']
+ALLOWED_HOSTS = ['https://movie-recommendation-bden.onrender.com', '127.0.0.1', 'localhost']
+
 
 
 
